@@ -428,8 +428,13 @@ int main(int argc, char *const *argv)
             {
                 unsigned long now = ({ struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts); (ts.tv_sec * 1000000000UL + ts.tv_nsec); });
                 if (now - prev_ts > 1000000000UL) {
-                    printf("[%s]: %10lu Requests/sec rx %5lu Mbps, tx %5lu Mbps, total %5lu Mbps\n",
-                           (mode_server ? "server" : "client"), io_stat[0], io_stat[1] * 8 / 1000000, io_stat[2] * 8 / 1000000, (io_stat[1] * 8 + io_stat[2] * 8) / 1000000);
+                    if (io_stat[1] > 1000000 || io_stat[2] > 1000000) {
+                        printf("[%s]: %10lu Requests/sec rx %5lu Mbps, tx %5lu Mbps, total %5lu Mbps\n",
+                               (mode_server ? "server" : "client"), io_stat[0], io_stat[1] * 8 / 1000000, io_stat[2] * 8 / 1000000, (io_stat[1] * 8 + io_stat[2] * 8) / 1000000);
+                    } else {
+                        printf("[%s]: %10lu Requests/sec  (rx %11lu bps, tx %11lu bps)\n",
+                               (mode_server ? "server" : "client"), io_stat[0], io_stat[1] * 8, io_stat[2] * 8);
+                    }
                     memset(io_stat, 0, sizeof(io_stat));
                     prev_ts = now;
                 }
