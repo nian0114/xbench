@@ -61,6 +61,7 @@
 #define HTTP_REQ_FORMAT         \
 "GET %s HTTP/1.1\r\n"       \
 "Connection: Keep-Alive\r\n"     \
+"Host: %s\r\n"     \
 "\r\n"
 
 #define HTTP_RSP_FORMAT         \
@@ -285,6 +286,7 @@ int main(int argc, char *const *argv)
     bool mode_server = true;
     int max_epoll_wait_timeout_ms = 0;
     char *url_value = "/";
+    char *host_value = "X";
 
     {
         int ret;
@@ -298,7 +300,7 @@ int main(int argc, char *const *argv)
     {
         int ch;
         bool _a = false, _g = false, _m = false;
-        while ((ch = getopt(argc, argv, "a:c:e:g:l:m:p:s:u:")) != -1) {
+        while ((ch = getopt(argc, argv, "a:c:e:g:l:m:p:s:u:h:")) != -1) {
             switch (ch) {
                 case 'a':
                     inet_pton(AF_INET, optarg, &_addr);
@@ -330,6 +332,9 @@ int main(int argc, char *const *argv)
                     break;
                 case 'u':
                     url_value = optarg;
+                    break;
+                case 'h':
+                    host_value = optarg;
                     break;
                 default:
                     assert(0);
@@ -410,10 +415,12 @@ int main(int argc, char *const *argv)
     } else { /* client mode */
         {
             size_t urllen = strlen(url_value);
-            size_t buflen = urllen + 42 /* for url(max 128) + http base */;
+            size_t hostlen = strlen(host_value);
+            size_t buflen = hostlen + urllen + 50 /* for url(max 128) + http base */;
             assert((httpbuf = (char *) malloc(buflen)) != NULL);
-            httpdatalen = snprintf(httpbuf, buflen, HTTP_REQ_FORMAT, url_value);
+            httpdatalen = snprintf(httpbuf, buflen, HTTP_REQ_FORMAT, url_value, host_value);
             printf("http data length: %lu bytes\n", httpdatalen);
+            printf("http data : %s\n", httpbuf);
         }
         int i;
         printf("%d concurrent connection(s)\n", num_conn);
