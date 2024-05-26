@@ -143,6 +143,37 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
 //        char buf[4] = { 0 };
 //        pbuf_copy_partial(p, buf, 3, 0);
 //        
+        size_t content_len = 1000;
+        size_t buflen = content_len + 256 /* for http hdr */;
+        char *content;
+        assert((content = (char *) malloc(content_len + 1)) != NULL);
+        memset(content, 'A', content_len);
+        content[content_len] = '\0';
+        
+        uint64_t n = (((uint64_t) random() * 4) / 0x80000000);
+
+        switch (n) {
+            case 0:
+                // json
+                httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len, "application/json", content);
+                break;
+            case 1:
+                // xml
+                httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len, "application/xml", content);
+                break;
+            case 2:
+                // plain
+                httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len, "text/plain", content);
+                break;
+            default:
+                // html
+                httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len, "text/html", content);
+                break;
+        }
+        
+        
+        free(content);
+        
 //        if (!strncmp(buf, "GET", 3)) {
             io_stat[0]++;
             io_stat[2] += httpdatalen;
@@ -300,7 +331,6 @@ int main(int argc, char *const *argv)
 {
     struct netif _netif = { 0 };
     ip4_addr_t _addr, _mask, _gate, _srv_ip;
-    size_t content_len = 1;
     int server_port = 10000, num_conn = 1;
     bool mode_server = true;
     int max_epoll_wait_timeout_ms = 0;
@@ -340,9 +370,7 @@ int main(int argc, char *const *argv)
                     inet_pton(AF_INET, optarg, &_mask);
                     _m = true;
                     break;
-                case 'l':
-                    content_len = atol(optarg);
-                    break;
+
                 case 'p':
                     server_port = atoi(optarg);
                     break;
@@ -420,15 +448,10 @@ int main(int argc, char *const *argv)
     
     if (mode_server) { /* server mode */
         {
-            size_t buflen = content_len + 256 /* for http hdr */;
-            char *content;
-            assert((httpbuf = (char *) malloc(buflen)) != NULL);
-            assert((content = (char *) malloc(content_len + 1)) != NULL);
-            memset(content, 'A', content_len);
-            content[content_len] = '\0';
-            httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len, "text/html", content);
-            free(content);
-            printf("http data length: %lu bytes\n", httpdatalen);
+            /*
+             response max size is 1024 * 10
+             */
+            assert((httpbuf = (char *) malloc(1024*10)) != NULL);
         }
         {
             struct tcp_pcb *tpcb, *_tpcb;
