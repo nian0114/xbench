@@ -589,37 +589,37 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
             if (random() % 2) {
                 char id[19]; // 18位身份证号码加上结束符
                 generate_id(id);
-                content_len = snprintf(content, 19, "%s\n", id);
+                content_len = snprintf(content, 1 + 19, "%s\n", id);
             }
             
             if (random() % 2) {
                 char phone[12]; // 11位手机号码加上结束符
                 generate_phone_number(phone);
-                content_len += snprintf(content + content_len, 12, "%s\n", phone);
+                content_len += snprintf(content + content_len, 1 + 12, "%s\n", phone);
             }
             
             if (random() % 2) {
                 char plate[10]; // 车牌号（1个汉字+1个字母+5个字母或数字+结束符）
                 generate_license_plate(plate);
-                content_len += snprintf(content + content_len, 10, "%s\n", plate);
+                content_len += snprintf(content + content_len, 1 + 10, "%s\n", plate);
             }
             
             if (random() % 2) {
                 char card[17]; // 16位银行卡号加上结束符
                 generate_bank_card(card);
-                content_len += snprintf(content + content_len, 17, "%s\n", card);
+                content_len += snprintf(content + content_len, 1 + 17, "%s\n", card);
             }
             
             if (random() % 2) {
                 char reg[16]; // 15位工商注册号加上结束符
                 generate_business_registration(reg);
-                content_len += snprintf(content + content_len, 16, "%s\n", reg);
+                content_len += snprintf(content + content_len, 1 + 16, "%s\n", reg);
             }
             
             if (random() % 2) {
                 char email[50]; // 假设邮箱地址长度不超过50
                 generate_email(email);
-                content_len += snprintf(content + content_len, 50, "%s\n", email);
+                content_len += snprintf(content + content_len, 1+ 50, "%s\n", email);
             }
             
             // left_size代表上文都执行完和要求的数据之间的差距
