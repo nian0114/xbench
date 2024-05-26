@@ -371,6 +371,7 @@ static int tx_idx = 0;
 static struct rte_mbuf *tx_mbufs[MAX_PKT_BURST] = { 0 };
 
 static char *httpbuf;
+static char *content;
 static size_t httpdatalen;
 
 static uint8_t random_url = 0;
@@ -441,8 +442,6 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
         //
         size_t content_len = 0;
         size_t buflen = 256 + max_content_len /* for http hdr */;
-        char *content;
-        assert((content = (char *) malloc(max_content_len)) != NULL);
         
         uint32_t n = response_type;
         if (n == 0) {
@@ -515,6 +514,8 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
                 content[content_len-1] = '}';
             }
             
+            memset(content + content_len, '\0', max_content_len - content_len);
+            
             // json
             httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len + 1, "application/json", (int) content_len, content);
         } else if (n == 2) {
@@ -580,6 +581,8 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
             }
             
             content_len += sprintf(content + content_len, "</xia>");
+            
+            memset(content + content_len, '\0', max_content_len - content_len);
             
             // xml
             httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len + 1, "application/xml", (int) content_len, content);
@@ -685,13 +688,11 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
             
             content_len += sprintf(content + max_content_len - 1 - 14, "</body></html>");
             
-            
+            memset(content + content_len, '\0', max_content_len - content_len);
             // plain
             httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len + 1, "text/html", (int) content_len, content);
         }
-        
-        free(content);
-        
+                
         //        if (!strncmp(buf, "GET", 3)) {
         io_stat[0]++;
         io_stat[2] += httpdatalen;
@@ -971,10 +972,9 @@ int main(int argc, char *const *argv)
     
     if (mode_server) { /* server mode */
         {
-            /*
-             response max size is 1024 * 10
-             */
-            assert((httpbuf = (char *) malloc(1024*10)) != NULL);
+            // FIXME: 256 now is right for req hdr but if feature, change it self!
+            assert((content = (char *) malloc(max_content_len)) != NULL);
+            assert((httpbuf = (char *) malloc(256 + max_content_len + 1)) != NULL);
         }
         {
             struct tcp_pcb *tpcb, *_tpcb;
