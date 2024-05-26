@@ -376,6 +376,15 @@ static size_t httpdatalen;
 
 static uint8_t random_url = 0;
 static uint8_t response_type = 1;
+/*
+ 1: 身份证
+ 2: 手机号
+ 4: 车牌号
+ 8: 银行卡号
+ 16: 工商注册号
+ 32: 邮箱地址
+ */
+static uint32_t sdd_data_type = 1|2|4|8|16|32;
 static size_t max_content_len = 1024;
 const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -460,37 +469,37 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
             content[0] = '{';
             content_len += 1;
             
-            if (random() % 2) {
+            if ((sdd_data_type & 1) && random() % 2) {
                 char id[19]; // 18位身份证号码加上结束符
                 generate_id(id);
                 content_len += snprintf(content+content_len, 19 + 13, "\"cardNo\": \"%s\",", id);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 2) && random() % 2) {
                 char phone[12]; // 11位手机号码加上结束符
                 generate_phone_number(phone);
                 content_len += snprintf(content+content_len, 12 + 12, "\"phone\": \"%s\",", phone);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 4) && random() % 2) {
                 char plate[10]; // 车牌号（1个汉字+1个字母+5个字母或数字+结束符）
                 generate_license_plate(plate);
                 content_len += snprintf(content+content_len, 10 + 12, "\"plate\": \"%s\",", plate);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 8) && random() % 2) {
                 char card[17]; // 16位银行卡号加上结束符
                 generate_bank_card(card);
                 content_len += snprintf(content+content_len, 17 + 11, "\"card\": \"%s\",", card);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 16) && random() % 2) {
                 char reg[16]; // 15位工商注册号加上结束符
                 generate_business_registration(reg);
                 content_len += snprintf(content+content_len, 16 + 10, "\"reg\": \"%s\",", (reg));
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 32) && random() % 2) {
                 char email[50]; // 假设邮箱地址长度不超过50
                 generate_email(email);
                 content_len += snprintf(content+content_len, 50 + 12, "\"email\": \"%s\",", email);
@@ -532,37 +541,37 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
             content_len += sprintf(content+content_len, "<xia>");
             
             // 身份证
-            if (random() % 2) {
+            if ((sdd_data_type & 1) && random() % 2) {
                 char id[19]; // 18位身份证号码加上结束符
                 generate_id(id);
                 content_len += snprintf(content+content_len, 19 + 17, "<cardNo>%s</cardNo>", id);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 2) && random() % 2) {
                 char phone[12]; // 11位手机号码加上结束符
                 generate_phone_number(phone);
                 content_len += snprintf(content+content_len, 12 + 15, "<phone>%s</phone>", phone);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 4) && random() % 2) {
                 char plate[10]; // 车牌号（1个汉字+1个字母+5个字母或数字+结束符）
                 generate_license_plate(plate);
                 content_len += snprintf(content+content_len, 10 + 15, "<plate>%s</plate>", plate);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 8) && random() % 2) {
                 char card[17]; // 16位银行卡号加上结束符
                 generate_bank_card(card);
                 content_len += snprintf(content+content_len, 17 + 13, "<card>%s</card>", card);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 16) && random() % 2) {
                 char reg[16]; // 15位工商注册号加上结束符
                 generate_business_registration(reg);
                 content_len += snprintf(content+content_len, 16 + 11, "<reg>%s</reg>", reg);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 32) && random() % 2) {
                 char email[50]; // 假设邮箱地址长度不超过50
                 generate_email(email);
                 content_len += snprintf(content+content_len, 50 + 15, "<email>%s</email>", email);
@@ -593,37 +602,37 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
              123456
              */
             
-            if (random() % 2) {
+            if ((sdd_data_type & 1) && random() % 2) {
                 char id[19]; // 18位身份证号码加上结束符
                 generate_id(id);
                 content_len = snprintf(content, 1 + 19, "%s\n", id);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 2) && random() % 2) {
                 char phone[12]; // 11位手机号码加上结束符
                 generate_phone_number(phone);
                 content_len += snprintf(content + content_len, 1 + 12, "%s\n", phone);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 4) && random() % 2) {
                 char plate[10]; // 车牌号（1个汉字+1个字母+5个字母或数字+结束符）
                 generate_license_plate(plate);
                 content_len += snprintf(content + content_len, 1 + 10, "%s\n", plate);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 8) && random() % 2) {
                 char card[17]; // 16位银行卡号加上结束符
                 generate_bank_card(card);
                 content_len += snprintf(content + content_len, 1 + 17, "%s\n", card);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 16) && random() % 2) {
                 char reg[16]; // 15位工商注册号加上结束符
                 generate_business_registration(reg);
                 content_len += snprintf(content + content_len, 1 + 16, "%s\n", reg);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 32) && random() % 2) {
                 char email[50]; // 假设邮箱地址长度不超过50
                 generate_email(email);
                 content_len += snprintf(content + content_len, 1+ 50, "%s\n", email);
@@ -642,37 +651,37 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
              */
             content_len = sprintf(content, "<html><head><title>test</title></head><body>");
             
-            if (random() % 2) {
+            if ((sdd_data_type & 1) && random() % 2) {
                 char id[19]; // 18位身份证号码加上结束符
                 generate_id(id);
                 content_len += snprintf(content + content_len, 19 + 12, "cardNo:%s<br/>", id);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 2) && random() % 2) {
                 char phone[12]; // 11位手机号码加上结束符
                 generate_phone_number(phone);
                 content_len += snprintf(content + content_len, 12 + 11, "phone:%s<br/>", phone);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 4) && random() % 2) {
                 char plate[10]; // 车牌号（1个汉字+1个字母+5个字母或数字+结束符）
                 generate_license_plate(plate);
                 content_len += snprintf(content + content_len, 10 + 11, "plate:%s<br/>", plate);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 8) && random() % 2) {
                 char card[17]; // 16位银行卡号加上结束符
                 generate_bank_card(card);
                 content_len += snprintf(content + content_len, 17 + 10, "card:%s<br/>", card);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 16) && random() % 2) {
                 char reg[16]; // 15位工商注册号加上结束符
                 generate_business_registration(reg);
                 content_len += snprintf(content + content_len, 16 + 9, "reg:%s<br/>", reg);
             }
             
-            if (random() % 2) {
+            if ((sdd_data_type & 32) && random() % 2) {
                 char email[50]; // 假设邮箱地址长度不超过50
                 generate_email(email);
                 content_len += snprintf(content + content_len, 50 + 11, "email:%s<br/>", email);
@@ -869,7 +878,7 @@ int main(int argc, char *const *argv)
         int ch;
         int i;
         bool _a = false, _g = false, _m = false;
-        while ((ch = getopt(argc, argv, "a:c:e:g:l:m:p:s:u:h:r:l:")) != -1) {
+        while ((ch = getopt(argc, argv, "a:c:e:g:l:m:p:s:u:h:r:l:d:")) != -1) {
             switch (ch) {
                 case 'a':
                     inet_pton(AF_INET, optarg, &_addr);
@@ -877,6 +886,9 @@ int main(int argc, char *const *argv)
                     break;
                 case 'c':
                     num_conn = atoi(optarg);
+                    break;
+                case 'd':
+                    sdd_data_type = atoi(optarg);
                     break;
                 case 'e':
                     assert(sscanf(optarg, "%d", &max_epoll_wait_timeout_ms) == 1);
