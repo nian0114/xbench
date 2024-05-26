@@ -73,3 +73,59 @@ unzip lwip-${LWIP_VER}.zip -d ${LWIP_SRC_DIR}
 ```
 make
 ```
+
+
+# 使用方法
+## 客户端
+1. 通过ethtool查看网卡对应的PCI总线地址 ethtool -i xxx。
+```
+#如ens224为发包网卡
+ethtool -i ens224
+```
+
+2. 绑定DPDK网卡
+```
+# PCI总线地址为0000:0b:00.0， 网卡驱动为uio_pci_generic
+# https://doc.dpdk.org/guides/linux_gsg/linux_drivers.html
+sudo ./dpdk/dpdk-22.03/usertools/dpdk-devbind.py -b uio_pci_generic 0000:0b:00.0
+```
+
+3. 启动APP
+```
+# --allow= PCI总线地址 如0000:0b:00.0
+# -a 绑定IP 如10.0.0.2
+# -g 网关地址 如10.0.0.1
+# -m 子网掩码 如255.255.255.0
+# -l Content-Length 如1
+# -p 监听端口为10000
+LD_LIBRARY_PATH=./dpdk/install/lib/x86_64-linux-gnu ./app -l 0-1 --proc-type=primary --file-prefix=pmd1 --allow=0000:0b:00.0 -- -a 10.0.0.2 -g 10.0.0.1 -m 255.255.255.0 -l 1 -p 10000
+```
+
+## 服务端
+1. 通过ethtool查看网卡对应的PCI总线地址 ethtool -i xxx。
+```
+#如ens224为收包网卡
+ethtool -i ens224
+```
+
+2. 绑定DPDK网卡
+```
+# PCI总线地址为0000:0b:00.0， 网卡驱动为uio_pci_generic
+# https://doc.dpdk.org/guides/linux_gsg/linux_drivers.html
+sudo ./dpdk/dpdk-22.03/usertools/dpdk-devbind.py -b uio_pci_generic 0000:0b:00.0
+```
+
+3. 启动APP
+```
+# --allow= PCI总线地址 如0000:0b:00.0
+# -a 绑定IP 如10.0.0.4
+# -g 网关地址 如10.0.0.1
+# -m 子网掩码 如255.255.255.0
+# -s 服务器IP 如10.0.0.3
+# -c 客户端数量 如128 (1-128)
+# -u（可选） URL地址 默认值为/ 如/aaaaa，如果需要随机字符，则'/\`\`\`\`\`'， \`数量代表随机字符串的长度
+# -h（可选） Host 默认值为X 如www.taobao.com 
+# 监听端口为10000
+LD_LIBRARY_PATH=./dpdk/install/lib/x86_64-linux-gnu ./app -l 0-1 --proc-type=primary --file-prefix=pmd1 --allow=0000:0b:00.0 -- -a 10.0.0.4 -g 10.0.0.1 -m 255.255.255.0 -p 80 -s 10.0.0.3 -c 128 -u '/`````'
+```
+
