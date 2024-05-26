@@ -97,8 +97,23 @@ sudo ./dpdk/dpdk-22.03/usertools/dpdk-devbind.py -b uio_pci_generic 0000:0b:00.0
 # -g 网关地址 如10.0.0.1
 # -m 子网掩码 如255.255.255.0
 # -l Content-Length 如1
-# -p 监听端口为10000
-LD_LIBRARY_PATH=./dpdk/install/lib/x86_64-linux-gnu ./app -l 0-1 --proc-type=primary --file-prefix=pmd1 --allow=0000:0b:00.0 -- -a 10.0.0.2 -g 10.0.0.1 -m 255.255.255.0 -l 1 -p 10000
+# -p 监听端口 默认为10000 如80
+# -l 响应体最大长度 默认为1024，一般情况下默认会按照最大填充，考虑到JSON/XML格式固定，故可能小于你设置的值
+# -r 响应内容格式 默认为0随机
+## 响应内容格式
+ 1: application/json
+ 2: application/xml
+ 3: text/plain
+ 其他任意值: text/html
+# -d 敏感数据范围 默认为63全开，需要开启的内容做或运算，此功能对性能影响较大
+## 敏感数据内容
+ 1: 身份证
+ 2: 手机号
+ 4: 车牌号
+ 8: 银行卡号
+ 16: 工商注册号
+ 32: 邮箱地址
+LD_LIBRARY_PATH=./dpdk/install/lib/x86_64-linux-gnu ./app -l 0-1 --proc-type=primary --file-prefix=pmd1 --allow=0000:0b:00.0 -- -a 10.0.0.2 -g 10.0.0.1 -m 255.255.255.0 -l 1 -p 10000 -d 3 -r 0
 ```
 
 ## 服务端
@@ -125,7 +140,8 @@ sudo ./dpdk/dpdk-22.03/usertools/dpdk-devbind.py -b uio_pci_generic 0000:0b:00.0
 # -c 客户端数量 如128 (1-128)
 # -u（可选） URL地址 默认值为/ 如/aaaaa，如果需要随机字符，则'/\`\`\`\`\`'， \`数量代表随机字符串的长度
 # -h（可选） Host 默认值为X 如www.taobao.com 
-# 监听端口为10000
-LD_LIBRARY_PATH=./dpdk/install/lib/x86_64-linux-gnu ./app -l 0-1 --proc-type=primary --file-prefix=pmd1 --allow=0000:0b:00.0 -- -a 10.0.0.4 -g 10.0.0.1 -m 255.255.255.0 -p 80 -s 10.0.0.3 -c 128 -u '/`````'
+# -p 服务器端口 默认为10000 如80
+
+LD_LIBRARY_PATH=./dpdk/install/lib/x86_64-linux-gnu ./app -l 0-1 --proc-type=primary --file-prefix=pmd1 --allow=0000:0b:00.0 -- -a 10.0.0.4 -g 10.0.0.1 -m 255.255.255.0 -p 80 -s 10.0.0.3 -c 128 -u '/`````' -h www.baidu.com
 ```
 
