@@ -79,6 +79,9 @@ static struct rte_mbuf *tx_mbufs[MAX_PKT_BURST] = { 0 };
 static char *httpbuf;
 static size_t httpdatalen;
 
+static uint8_t random_url = 0;
+const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
 static void tx_flush(void)
 {
     int xmit = tx_idx, xmitted = 0;
@@ -125,6 +128,7 @@ struct http_response {
 static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
                               struct pbuf *p, err_t err)
 {
+    int i = 0;
     if (err != ERR_OK)
         return err;
     if (!p) {
@@ -195,6 +199,15 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
                     io_stat[0]++;
                     io_stat[2] += httpdatalen;
                     assert(tcp_sndbuf(tpcb) >= httpdatalen);
+                    
+                    /*
+                     'GET /' is 5 letters
+                     如果第五个字符不是`, 就不随机替换
+                     */
+                    for (i=5; i<random_url+5; i++) {
+                        httpbuf[i] = charset[rand() % (sizeof(charset) - 1)];
+                    }
+                    
                     assert(tcp_write(tpcb, httpbuf, httpdatalen, TCP_WRITE_FLAG_COPY) == ERR_OK);
                     assert(tcp_output(tpcb) == ERR_OK);
                     r->state = 0;
@@ -244,12 +257,18 @@ static err_t accept_handler(void *arg __attribute__((unused)), struct tcp_pcb *t
 
 static err_t connected_handler(void *arg, struct tcp_pcb *tpcb, err_t err)
 {
+    int i=0;
     if (err != ERR_OK)
         return err;
     if ((err = accept_handler(arg, tpcb, err)) != ERR_OK)
         return err;
     io_stat[2] += httpdatalen;
     assert(tcp_sndbuf(tpcb) >= httpdatalen);
+    
+    for (i=5; i<random_url+5; i++) {
+        httpbuf[i] = charset[rand() % (sizeof(charset) - 1)];
+    }
+
     assert(tcp_write(tpcb, httpbuf, httpdatalen, TCP_WRITE_FLAG_COPY) == ERR_OK);
     assert(tcp_output(tpcb) == ERR_OK);
     
@@ -299,6 +318,7 @@ int main(int argc, char *const *argv)
     
     {
         int ch;
+        int i;
         bool _a = false, _g = false, _m = false;
         while ((ch = getopt(argc, argv, "a:c:e:g:l:m:p:s:u:h:")) != -1) {
             switch (ch) {
@@ -332,6 +352,13 @@ int main(int argc, char *const *argv)
                     break;
                 case 'u':
                     url_value = optarg;
+                    for (i=1; ;i++) {
+                        if (url_value[i] != '`') {
+                            break;
+                        }
+                        
+                        random_url ++;
+                    }
                     break;
                 case 'h':
                     host_value = optarg;
