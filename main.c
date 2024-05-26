@@ -128,15 +128,19 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
     }
     io_stat[1] += p->tot_len;
     if (!arg) { /* server mode */
-        char buf[4] = { 0 };
-        pbuf_copy_partial(p, buf, 3, 0);
-        if (!strncmp(buf, "GET", 3)) {
+        // 考虑到这里可能需要支持POST，PUT等情况的协议，不再进行协议验证，统一返回同样的内容
+        // 后续如果需要需要，可以通过这里返回不同数据格式内容
+//
+//        char buf[4] = { 0 };
+//        pbuf_copy_partial(p, buf, 3, 0);
+//        
+//        if (!strncmp(buf, "GET", 3)) {
             io_stat[0]++;
             io_stat[2] += httpdatalen;
             assert(tcp_sndbuf(tpcb) >= httpdatalen);
             assert(tcp_write(tpcb, httpbuf, httpdatalen, TCP_WRITE_FLAG_COPY) == ERR_OK);
             assert(tcp_output(tpcb) == ERR_OK);
-        }
+//        }
     } else { /* client mode */
         struct http_response *r = (struct http_response *) arg;
         assert(p->tot_len < (sizeof(r->buf) - r->cur));
