@@ -6,6 +6,7 @@
 //
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
 
@@ -70,7 +71,300 @@
 "Content-Type: %s\r\n"  \
 "Connection: keep-alive\r\n" \
 "\r\n"                      \
-"%s"
+"%.*s\n"
+
+// MBUF_DATA_SIZE is same as dperf size
+#define MBUF_DATA_SIZE      (1024 * 10)
+
+
+/*
+ 以下代码用来随机生成一些测试数据
+ */
+
+/*
+ 身份证
+ srand(time(NULL)); // 初始化随机数种子
+ char id[19]; // 18位身份证号码加上结束符
+ 
+ generate_id(id);
+ */
+// 地址码数组，可以根据实际需要增加或修改
+const char* address_codes[] = {
+    "110000", // 北京市
+    "120000", // 天津市
+    "130000", // 河北省
+    // 更多地址码...
+};
+
+#define ADDRESS_COUNT (sizeof(address_codes) / sizeof(address_codes[0]))
+
+// 计算校验码
+char calculate_checksum(char *id) {
+    int weights[] = {7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2};
+    char checksum_chars[] = "10X98765432";
+    int sum = 0;
+    int i = 0;
+    
+    for (i = 0; i < 17; ++i) {
+        sum += (id[i] - '0') * weights[i];
+    }
+    
+    int mod = sum % 11;
+    return checksum_chars[mod];
+}
+
+// 生成随机身份证号码
+void generate_id(char *id) {
+    int i = 0;
+    
+    // 随机选择一个地址码
+    const char* address_code = address_codes[rand() % ADDRESS_COUNT];
+    for (i = 0; i < 6; ++i) {
+        id[i] = address_code[i];
+    }
+    
+    // 生成随机出生日期
+    int year = 1900 + abs(rand() % 101); // 假设1900-2000年之间的随机年份
+    int month = 1 + abs(rand() % 12);
+    int day = 1 + abs(rand() % 28); // 简化处理，假设每月都有28天
+    
+    snprintf(id + 6, 9, "%04d%02d%02d", year, month, day);
+    
+    // 生成随机顺序码
+    for (i = 14; i < 17; ++i) {
+        id[i] = '0' + rand() % 10;
+    }
+    
+    // 计算并设置校验码
+    id[17] = calculate_checksum(id);
+    id[18] = '\0'; // 结束符
+}
+
+
+/*
+ 手机号
+ srand(time(NULL)); // 初始化随机数种子
+ char phone[12]; // 11位手机号码加上结束符
+ 
+ generate_phone_number(phone);
+ */
+
+// 常见的中国大陆手机号码前缀
+const char* phone_prefixes[] = {
+    "130", "131", "132", "133", "134", "135", "136", "137", "138", "139", // 移动
+    "150", "151", "152", "153", "155", "156", "157", "158", "159", // 联通
+    "180", "181", "182", "183", "184", "185", "186", "187", "188", "189"  // 电信
+    // 可以根据需要增加其他前缀
+};
+
+#define PREFIX_COUNT (sizeof(phone_prefixes) / sizeof(phone_prefixes[0]))
+
+// 生成随机手机号码
+void generate_phone_number(char *phone) {
+    int i = 0;
+    // 随机选择一个前缀
+    const char* prefix = phone_prefixes[rand() % PREFIX_COUNT];
+    for (i = 0; i < 3; ++i) {
+        phone[i] = prefix[i];
+    }
+    
+    // 生成剩余的8位数字
+    for (i = 3; i < 11; ++i) {
+        phone[i] = '0' + rand() % 10;
+    }
+    
+    phone[11] = '\0'; // 结束符
+}
+
+/*
+ 车牌号
+ srand(time(NULL)); // 初始化随机数种子
+ char plate[10]; // 车牌号（1个汉字+1个字母+5个字母或数字+结束符）
+ 
+ generate_license_plate(plate);
+ 
+ printf("生成的车牌号: %s\n", plate);
+ */
+// 常见的省份简称
+const char* provinces[] = {
+    "京", "津", "沪", "渝", "冀", "豫", "云", "辽", "黑", "湘",
+    "皖", "鲁", "新", "苏", "浙", "赣", "鄂", "桂", "甘", "晋",
+    "蒙", "陕", "吉", "闽", "贵", "粤", "青", "藏", "川", "宁",
+    "琼"
+};
+
+#define PROVINCE_COUNT (sizeof(provinces) / sizeof(provinces[0]))
+
+// 生成随机车牌号
+void generate_license_plate(char *plate) {
+    int i = 0;
+    // 随机选择一个省份简称
+    const char* province = provinces[rand() % PROVINCE_COUNT];
+    for (i = 0; i < 3; ++i) {
+        plate[i] = province[i];
+    }
+    
+    // 生成随机的地区代码（字母）
+    plate[3] = 'A' + rand() % 26;
+    
+    // 生成剩余的5位字母或数字
+    for (i = 4; i < 9; ++i) {
+        int random_choice = rand() % 36;
+        if (random_choice < 10) {
+            plate[i] = '0' + random_choice; // 0-9
+        } else {
+            plate[i] = 'A' + (random_choice - 10); // A-Z
+        }
+    }
+    
+    plate[9] = '\0'; // 结束符
+}
+
+/*
+ 银行卡号
+ srand(time(NULL)); // 初始化随机数种子
+ char card[17]; // 16位银行卡号加上结束符
+ 
+ generate_bank_card(card);
+ 
+ printf("生成的银行卡号: %s\n", card);
+ */
+
+// 常见的发卡行标识代码（示例）
+const char* bin_prefixes[] = {
+    "622202", // 中国工商银行
+    "622848", // 中国农业银行
+    "622700", // 中国建设银行
+    "622262", // 中国银行
+    "622155", // 交通银行
+    // 更多BIN前缀...
+};
+
+#define BIN_COUNT (sizeof(bin_prefixes) / sizeof(bin_prefixes[0]))
+
+// 计算Luhn校验位
+int calculate_luhn(const char *number) {
+    int i = 0;
+    int sum = 0;
+    int len = 15;
+    int parity = len % 2;
+    
+    for (i = 0; i < len; i++) {
+        int digit = number[i] - '0';
+        if (i % 2 == parity) {
+            digit *= 2;
+            if (digit > 9) {
+                digit -= 9;
+            }
+        }
+        sum += digit;
+    }
+    
+    return (10 - (sum % 10)) % 10;
+}
+
+// 生成随机银行卡号
+void generate_bank_card(char *card) {
+    int i = 0;
+    // 随机选择一个发卡行标识代码
+    const char* bin = bin_prefixes[rand() % BIN_COUNT];
+    for (i = 0; i < 6; ++i) {
+        card[i] = bin[i];
+    }
+    
+    // 生成随机的个人账号标识
+    for (i = 6; i < 15; ++i) {
+        card[i] = '0' + rand() % 10;
+    }
+    
+    // 计算并设置校验位
+    card[15] = '0' + calculate_luhn(card);
+    card[16] = '\0'; // 结束符
+}
+
+/*
+ 工商号
+ srand(time(NULL)); // 初始化随机数种子
+ char reg[16]; // 15位工商注册号加上结束符
+ 
+ generate_business_registration(reg);
+ 
+ printf("生成的工商注册号: %s\n", reg);
+ */
+// 计算校验位
+int calculate_checksum_business_registration(const char *number) {
+    int weights[] = {1, 3, 9, 27, 19, 26, 16, 17, 20, 29, 25, 13, 8, 24};
+    
+    int i = 0;
+    int sum = 0;
+    
+    for (i = 0; i < 14; i++) {
+        sum += (number[i] - '0') * weights[i];
+    }
+    
+    int checksum = 31 - (sum % 31);
+    return checksum == 31 ? 0 : checksum;
+}
+
+// 生成随机工商注册号
+void generate_business_registration(char *reg) {
+    int i = 0;
+    // 随机生成前14位数字
+    for (i = 0; i < 14; ++i) {
+        reg[i] = '0' + rand() % 10;
+    }
+    
+    // 计算并设置校验位
+    int checksum = calculate_checksum_business_registration(reg);
+    reg[14] = '0' + checksum;
+    reg[15] = '\0'; // 结束符
+}
+
+
+/*
+ 邮箱信息
+ srand(time(NULL)); // 初始化随机数种子
+ char email[50]; // 假设邮箱地址长度不超过50
+ 
+ generate_email(email);
+ 
+ printf("生成的邮箱地址: %s\n", email);
+ */
+// 常见的域名
+const char* domains[] = {
+    "gmail.com",
+    "yahoo.com",
+    "hotmail.com",
+    "163.com",
+    "qq.com",
+    "sina.com"
+};
+
+#define DOMAIN_COUNT (sizeof(domains) / sizeof(domains[0]))
+
+// 生成随机用户名
+void generate_username(char *username, int length) {
+    int i = 0;
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    for (i = 0; i < length; ++i) {
+        username[i] = charset[rand() % (sizeof(charset) - 1)];
+    }
+    username[length] = '\0'; // 结束符
+}
+
+// 生成随机邮箱地址
+void generate_email(char *email) {
+    char username[11]; // 假设用户名长度为10
+    generate_username(username, 10);
+    
+    // 随机选择一个域名
+    const char* domain = domains[rand() % DOMAIN_COUNT];
+    
+    // 组合用户名和域名生成邮箱地址
+    snprintf(email, 50, "%s@%s", username, domain);
+}
+
+
 
 static struct rte_mempool *pktmbuf_pool = NULL;
 static int tx_idx = 0;
@@ -139,54 +433,274 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
     if (!arg) { /* server mode */
         // 考虑到这里可能需要支持POST，PUT等情况的协议，不再进行协议验证，统一返回同样的内容
         // 后续如果需要需要，可以通过这里返回不同数据格式内容
-//
-//        char buf[4] = { 0 };
-//        pbuf_copy_partial(p, buf, 3, 0);
-//        
-        size_t content_len = 1000;
-        size_t buflen = content_len + 256 /* for http hdr */;
+        //
+        //        char buf[4] = { 0 };
+        //        pbuf_copy_partial(p, buf, 3, 0);
+        //
+        size_t max_content_len = 1024;
+        size_t content_len = 0;
+        size_t buflen = 256 + max_content_len /* for http hdr */;
         char *content;
-        assert((content = (char *) malloc(content_len + 1)) != NULL);
-        memset(content, 'A', content_len);
-        content[content_len] = '\0';
+        assert((content = (char *) malloc(max_content_len)) != NULL);
         
+        // 随机4选1模式
         uint64_t n = (((uint64_t) random() * 4) / 0x80000000);
-
-        switch (n) {
-            case 0:
-                // json
-                httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len, "application/json", content);
-                break;
-            case 1:
-                // xml
-                httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len, "application/xml", content);
-                break;
-            case 2:
-                // plain
-                httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len, "text/plain", content);
-                break;
-            default:
-                // html
-                httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len, "text/html", content);
-                break;
-        }
         
+        //以下方法现阶段不会超过10240，不想处理了，请注意，后续加的时候需要注意！！！
+        
+        if (n == 1) {
+            /*
+             {"ss": "11", "rr": "22"}
+             */
+            
+            // [0] must {
+            content[0] = '{';
+            content_len += 1;
+            
+            if (random() % 2) {
+                char id[19]; // 18位身份证号码加上结束符
+                generate_id(id);
+                content_len += snprintf(content+content_len, 19 + 13, "\"cardNo\": \"%s\",", id);
+            }
+            
+            if (random() % 2) {
+                char phone[12]; // 11位手机号码加上结束符
+                generate_phone_number(phone);
+                content_len += snprintf(content+content_len, 12 + 12, "\"phone\": \"%s\",", phone);
+            }
+            
+            if (random() % 2) {
+                char plate[10]; // 车牌号（1个汉字+1个字母+5个字母或数字+结束符）
+                generate_license_plate(plate);
+                content_len += snprintf(content+content_len, 10 + 12, "\"plate\": \"%s\",", plate);
+            }
+            
+            if (random() % 2) {
+                char card[17]; // 16位银行卡号加上结束符
+                generate_bank_card(card);
+                content_len += snprintf(content+content_len, 17 + 11, "\"card\": \"%s\",", card);
+            }
+            
+            if (random() % 2) {
+                char reg[16]; // 15位工商注册号加上结束符
+                generate_business_registration(reg);
+                content_len += snprintf(content+content_len, 16 + 10, "\"reg\": \"%s\",", (reg));
+            }
+            
+            if (random() % 2) {
+                char email[50]; // 假设邮箱地址长度不超过50
+                generate_email(email);
+                content_len += snprintf(content+content_len, 50 + 12, "\"email\": \"%s\",", email);
+            }
+            
+            // left_size代表上文都执行完和要求的数据之间的差距
+            size_t left_size = max_content_len - content_len;
+            if (left_size > 13) {
+                content_len += snprintf(content+content_len, 11, "\"other\": \"");
+                memset(content+content_len, 'A', max_content_len-content_len);
+                content[max_content_len-3] = '"';
+                content[max_content_len-2] = '}';
+                
+                content_len = max_content_len -1;
+            } else {
+                if (content_len == 1) {
+                    // json格式最小为{}单元
+                    content_len = 2;
+                }
+                // 此处故意不闭合，请不要\0， rsp_format里已经用了.*s
+                content[content_len-1] = '}';
+            }
+            
+            // json
+            httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len + 1, "application/json", (int) content_len, content);
+        } else if (n == 2) {
+            /*
+             <?xml version="1.0" encoding="UTF-8"?>
+             <note>
+             <to>Tove</to>
+             <from>Jani</from>
+             <heading>Reminder</heading>
+             <body>Don't forget me this weekend!</body>
+             </note>
+             */
+            content_len = sprintf(content, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            content_len += sprintf(content+content_len, "<xia>");
+            
+            // 身份证
+            if (random() % 2) {
+                char id[19]; // 18位身份证号码加上结束符
+                generate_id(id);
+                content_len += snprintf(content+content_len, 19 + 17, "<cardNo>%s</cardNo>", id);
+            }
+            
+            if (random() % 2) {
+                char phone[12]; // 11位手机号码加上结束符
+                generate_phone_number(phone);
+                content_len += snprintf(content+content_len, 12 + 15, "<phone>%s</phone>", phone);
+            }
+            
+            if (random() % 2) {
+                char plate[10]; // 车牌号（1个汉字+1个字母+5个字母或数字+结束符）
+                generate_license_plate(plate);
+                content_len += snprintf(content+content_len, 10 + 15, "<plate>%s</plate>", plate);
+            }
+            
+            if (random() % 2) {
+                char card[17]; // 16位银行卡号加上结束符
+                generate_bank_card(card);
+                content_len += snprintf(content+content_len, 17 + 13, "<card>%s</card>", card);
+            }
+            
+            if (random() % 2) {
+                char reg[16]; // 15位工商注册号加上结束符
+                generate_business_registration(reg);
+                content_len += snprintf(content+content_len, 16 + 11, "<reg>%s</reg>", reg);
+            }
+            
+            if (random() % 2) {
+                char email[50]; // 假设邮箱地址长度不超过50
+                generate_email(email);
+                content_len += snprintf(content+content_len, 50 + 15, "<email>%s</email>", email);
+            }
+            
+            
+            // left_size代表上文都执行完和要求的数据之间的差距
+            size_t left_size = max_content_len - content_len;
+            if (left_size > 15 + 6) {
+                // <other></other>
+                content_len += sprintf(content+content_len, "<other>");
+                memset(content+content_len, 'A', max_content_len-content_len);
+                (void) sprintf(content + max_content_len-8-6-1, "</other>");
+                
+                content_len = max_content_len - 6 -1;
+            }
+            
+            content_len += sprintf(content + content_len, "</xia>");
+            
+            // xml
+            httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len + 1, "application/xml", (int) content_len, content);
+        } else if (n == 3) {
+            /*
+             1234567890
+             12345
+             123456
+             */
+            
+            if (random() % 2) {
+                char id[19]; // 18位身份证号码加上结束符
+                generate_id(id);
+                content_len = snprintf(content, 19, "%s\n", id);
+            }
+            
+            if (random() % 2) {
+                char phone[12]; // 11位手机号码加上结束符
+                generate_phone_number(phone);
+                content_len += snprintf(content + content_len, 12, "%s\n", phone);
+            }
+            
+            if (random() % 2) {
+                char plate[10]; // 车牌号（1个汉字+1个字母+5个字母或数字+结束符）
+                generate_license_plate(plate);
+                content_len += snprintf(content + content_len, 10, "%s\n", plate);
+            }
+            
+            if (random() % 2) {
+                char card[17]; // 16位银行卡号加上结束符
+                generate_bank_card(card);
+                content_len += snprintf(content + content_len, 17, "%s\n", card);
+            }
+            
+            if (random() % 2) {
+                char reg[16]; // 15位工商注册号加上结束符
+                generate_business_registration(reg);
+                content_len += snprintf(content + content_len, 16, "%s\n", reg);
+            }
+            
+            if (random() % 2) {
+                char email[50]; // 假设邮箱地址长度不超过50
+                generate_email(email);
+                content_len += snprintf(content + content_len, 50, "%s\n", email);
+            }
+            
+            // left_size代表上文都执行完和要求的数据之间的差距
+            size_t left_size = max_content_len - content_len;
+            memset(content+content_len, 'A', left_size);
+            content_len = max_content_len -1;
+            
+            // plain
+            httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len + 1, "text/plain", (int) content_len, content);
+        }  else {
+            /*
+             id=123456&bbb=123456
+             */
+            content_len = sprintf(content, "<html><head><title>test</title></head><body>");
+            
+            if (random() % 2) {
+                char id[19]; // 18位身份证号码加上结束符
+                generate_id(id);
+                content_len += snprintf(content + content_len, 19 + 12, "cardNo:%s<br/>", id);
+            }
+            
+            if (random() % 2) {
+                char phone[12]; // 11位手机号码加上结束符
+                generate_phone_number(phone);
+                content_len += snprintf(content + content_len, 12 + 11, "phone:%s<br/>", phone);
+            }
+            
+            if (random() % 2) {
+                char plate[10]; // 车牌号（1个汉字+1个字母+5个字母或数字+结束符）
+                generate_license_plate(plate);
+                content_len += snprintf(content + content_len, 10 + 11, "plate:%s<br/>", plate);
+            }
+            
+            if (random() % 2) {
+                char card[17]; // 16位银行卡号加上结束符
+                generate_bank_card(card);
+                content_len += snprintf(content + content_len, 17 + 10, "card:%s<br/>", card);
+            }
+            
+            if (random() % 2) {
+                char reg[16]; // 15位工商注册号加上结束符
+                generate_business_registration(reg);
+                content_len += snprintf(content + content_len, 16 + 9, "reg:%s<br/>", reg);
+            }
+            
+            if (random() % 2) {
+                char email[50]; // 假设邮箱地址长度不超过50
+                generate_email(email);
+                content_len += snprintf(content + content_len, 50 + 11, "email:%s<br/>", email);
+            }
+            
+            // left_size代表上文都执行完和要求的数据之间的差距
+            size_t left_size = max_content_len - content_len;
+            if (left_size > 15) {
+                memset(content+content_len, 'A', max_content_len - content_len - 14);
+                content_len = max_content_len-1-14;
+            }
+            
+            
+            content_len += sprintf(content + max_content_len - 1 - 14, "</body></html>");
+            
+            
+            // plain
+            httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len + 1, "text/html", (int) content_len, content);
+        }
         
         free(content);
         
-//        if (!strncmp(buf, "GET", 3)) {
-            io_stat[0]++;
-            io_stat[2] += httpdatalen;
-            assert(tcp_sndbuf(tpcb) >= httpdatalen);
-            assert(tcp_write(tpcb, httpbuf, httpdatalen, TCP_WRITE_FLAG_COPY) == ERR_OK);
-            assert(tcp_output(tpcb) == ERR_OK);
-//        }
+        //        if (!strncmp(buf, "GET", 3)) {
+        io_stat[0]++;
+        io_stat[2] += httpdatalen;
+        assert(tcp_sndbuf(tpcb) >= httpdatalen);
+        assert(tcp_write(tpcb, httpbuf, httpdatalen, TCP_WRITE_FLAG_COPY) == ERR_OK);
+        assert(tcp_output(tpcb) == ERR_OK);
+        //        }
     } else { /* client mode */
         struct http_response *r = (struct http_response *) arg;
         assert(p->tot_len < (sizeof(r->buf) - r->cur));
         pbuf_copy_partial(p, &r->buf[r->cur], p->tot_len, 0);
         r->cur += p->tot_len;
-//        r->buf[r->cur] = '\0';
+        //        r->buf[r->cur] = '\0';
         switch (r->state) {
             case 0:
             {
@@ -299,7 +813,7 @@ static err_t connected_handler(void *arg, struct tcp_pcb *tpcb, err_t err)
     for (i=5; i<random_url+5; i++) {
         httpbuf[i] = charset[rand() % (sizeof(charset) - 1)];
     }
-
+    
     assert(tcp_write(tpcb, httpbuf, httpdatalen, TCP_WRITE_FLAG_COPY) == ERR_OK);
     assert(tcp_output(tpcb) == ERR_OK);
     
@@ -336,7 +850,7 @@ int main(int argc, char *const *argv)
     int max_epoll_wait_timeout_ms = 0;
     char *url_value = "/";
     char *host_value = "X";
-
+    
     {
         int ret;
         assert((ret = rte_eal_init(argc, (char **) argv)) >= 0);
@@ -370,7 +884,7 @@ int main(int argc, char *const *argv)
                     inet_pton(AF_INET, optarg, &_mask);
                     _m = true;
                     break;
-
+                    
                 case 'p':
                     server_port = atoi(optarg);
                     break;
