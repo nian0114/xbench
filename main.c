@@ -374,6 +374,8 @@ static char *httpbuf;
 static size_t httpdatalen;
 
 static uint8_t random_url = 0;
+static uint8_t response_type = 1;
+static size_t max_content_len = 1024;
 const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 static void tx_flush(void)
@@ -437,14 +439,16 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
         //        char buf[4] = { 0 };
         //        pbuf_copy_partial(p, buf, 3, 0);
         //
-        size_t max_content_len = 1024;
         size_t content_len = 0;
         size_t buflen = 256 + max_content_len /* for http hdr */;
         char *content;
         assert((content = (char *) malloc(max_content_len)) != NULL);
         
-        // 随机4选1模式
-        uint64_t n = (((uint64_t) random() * 4) / 0x80000000);
+        uint32_t n = response_type;
+        if (n == 0) {
+            // 随机4选1模式
+            n = (((uint64_t) random() * 4) / 0x80000000);
+        }
         
         //以下方法现阶段不会超过10240，不想处理了，请注意，后续加的时候需要注意！！！
         
@@ -864,7 +868,7 @@ int main(int argc, char *const *argv)
         int ch;
         int i;
         bool _a = false, _g = false, _m = false;
-        while ((ch = getopt(argc, argv, "a:c:e:g:l:m:p:s:u:h:")) != -1) {
+        while ((ch = getopt(argc, argv, "a:c:e:g:l:m:p:s:u:h:r:l:")) != -1) {
             switch (ch) {
                 case 'a':
                     inet_pton(AF_INET, optarg, &_addr);
@@ -884,7 +888,12 @@ int main(int argc, char *const *argv)
                     inet_pton(AF_INET, optarg, &_mask);
                     _m = true;
                     break;
-                    
+                case 'r':
+                    response_type = atoi(optarg);
+                    break;
+                case 'l':
+                    max_content_len = atoi(optarg);
+                    break;
                 case 'p':
                     server_port = atoi(optarg);
                     break;
