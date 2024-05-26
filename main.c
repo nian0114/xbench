@@ -133,7 +133,7 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
         assert(p->tot_len < (sizeof(r->buf) - r->cur));
         pbuf_copy_partial(p, &r->buf[r->cur], p->tot_len, 0);
         r->cur += p->tot_len;
-        r->buf[r->cur] = '\0';
+//        r->buf[r->cur] = '\0';
         switch (r->state) {
             case 0:
             {
