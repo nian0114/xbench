@@ -58,7 +58,11 @@
 
 #define PACKET_BUF_SIZE (1518)
 
-/* don't change */
+#define HTTP_REQ_FORMAT         \
+"GET %s HTTP/1.1\r\n"       \
+"Connection: Keep-Alive\r\n"     \
+"\r\n"
+
 #define HTTP_RSP_FORMAT         \
 "HTTP/1.1 200 OK\r\n"       \
 "Content-Length: %lu\r\n"  \
@@ -188,9 +192,9 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
                 r->content_recvd += r->cur;
                 if (r->content_recvd == r->content_tot_len) {
                     io_stat[0]++;
-                    io_stat[2] += 42;
-                    assert(tcp_sndbuf(tpcb) >= 42);
-                    assert(tcp_write(tpcb, "GET / HTTP/1.0\r\nConnection: Keep-Alive\r\n\r\n", 42, TCP_WRITE_FLAG_COPY) == ERR_OK);
+                    io_stat[2] += httpdatalen;
+                    assert(tcp_sndbuf(tpcb) >= httpdatalen);
+                    assert(tcp_write(tpcb, httpbuf, httpdatalen, TCP_WRITE_FLAG_COPY) == ERR_OK);
                     assert(tcp_output(tpcb) == ERR_OK);
                     r->state = 0;
                 }
@@ -243,10 +247,9 @@ static err_t connected_handler(void *arg, struct tcp_pcb *tpcb, err_t err)
         return err;
     if ((err = accept_handler(arg, tpcb, err)) != ERR_OK)
         return err;
-    
-    io_stat[2] += 42;
-    assert(tcp_sndbuf(tpcb) >= 42);
-    assert(tcp_write(tpcb, "GET / HTTP/1.0\r\nConnection: Keep-Alive\r\n\r\n", 42, TCP_WRITE_FLAG_COPY) == ERR_OK);
+    io_stat[2] += httpdatalen;
+    assert(tcp_sndbuf(tpcb) >= httpdatalen);
+    assert(tcp_write(tpcb, httpbuf, httpdatalen, TCP_WRITE_FLAG_COPY) == ERR_OK);
     assert(tcp_output(tpcb) == ERR_OK);
     
     return ERR_OK;
@@ -281,7 +284,8 @@ int main(int argc, char *const *argv)
     int server_port = 10000, num_conn = 1;
     bool mode_server = true;
     int max_epoll_wait_timeout_ms = 0;
-    
+    char *url_value = "/";
+
     {
         int ret;
         assert((ret = rte_eal_init(argc, (char **) argv)) >= 0);
@@ -294,7 +298,7 @@ int main(int argc, char *const *argv)
     {
         int ch;
         bool _a = false, _g = false, _m = false;
-        while ((ch = getopt(argc, argv, "a:c:e:g:l:m:p:s:")) != -1) {
+        while ((ch = getopt(argc, argv, "a:c:e:g:l:m:p:s:u:")) != -1) {
             switch (ch) {
                 case 'a':
                     inet_pton(AF_INET, optarg, &_addr);
@@ -323,6 +327,9 @@ int main(int argc, char *const *argv)
                 case 's':
                     inet_pton(AF_INET, optarg, &_srv_ip);
                     mode_server = false;
+                    break;
+                case 'u':
+                    url_value = optarg;
                     break;
                 default:
                     assert(0);
@@ -401,6 +408,13 @@ int main(int argc, char *const *argv)
             tcp_ext_arg_set(tpcb, 0, NULL);
         }
     } else { /* client mode */
+        {
+            size_t urllen = strlen(url_value);
+            size_t buflen = urllen + 42 /* for url(max 128) + http base */;
+            assert((httpbuf = (char *) malloc(buflen)) != NULL);
+            httpdatalen = snprintf(httpbuf, buflen, HTTP_REQ_FORMAT, url_value);
+            printf("http data length: %lu bytes\n", httpdatalen);
+        }
         int i;
         printf("%d concurrent connection(s)\n", num_conn);
         for (i = 0; i < num_conn; i++) {
