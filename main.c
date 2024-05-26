@@ -58,6 +58,15 @@
 
 #define PACKET_BUF_SIZE (1518)
 
+/* don't change */
+#define HTTP_RSP_FORMAT         \
+"HTTP/1.1 200 OK\r\n"       \
+"Content-Length: %lu\r\n"  \
+"Content-Type: %s\r\n"  \
+"Connection: keep-alive\r\n" \
+"\r\n"                      \
+"%s"
+
 static struct rte_mempool *pktmbuf_pool = NULL;
 static int tx_idx = 0;
 static struct rte_mbuf *tx_mbufs[MAX_PKT_BURST] = { 0 };
@@ -374,7 +383,7 @@ int main(int argc, char *const *argv)
             assert((content = (char *) malloc(content_len + 1)) != NULL);
             memset(content, 'A', content_len);
             content[content_len] = '\0';
-            httpdatalen = snprintf(httpbuf, buflen, "HTTP/1.1 200 OK\r\nContent-Length: %lu\r\nConnection: keep-alive\r\n\r\n%s", content_len, content);
+            httpdatalen = snprintf(httpbuf, buflen, HTTP_RSP_FORMAT, content_len, "text/html", content);
             free(content);
             printf("http data length: %lu bytes\n", httpdatalen);
         }
