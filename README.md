@@ -47,7 +47,7 @@ cd dpdk
 tar xvf dpdk-${DPDK_VER}.tar.xz
 
 cd $DPDK_SRC_DIR
-meson --prefix=${DPDK_INSTALL_DIR} ${DPDK_SRC_DIR}/build ${DPDK_SRC_DIR}
+meson --prefix=${DPDK_INSTALL_DIR} --libdir=lib/x86_64-linux-gnu ${DPDK_SRC_DIR}/build ${DPDK_SRC_DIR}
 ninja -C ${DPDK_SRC_DIR}/build
 ninja -C ${DPDK_SRC_DIR}/build install
 ```
