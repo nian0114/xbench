@@ -76,7 +76,26 @@ make
 
 
 # 使用方法
-## 客户端
+## DPDK大页配置
+1. 判断设备是否支持1G
+```
+cat /proc/cpuinfo | grep pdpe1gb
+如果在返回中看到pdpe1gb字样, 代表你的设备支持1GB大页内存，进行2.1步骤，否则则代表不支持，进行2.2步骤。
+
+```
+
+2.1 1GB大页内存配置
+```
+# 参考如下参数编辑 '/boot/grub2/grub.cfg'，然后重启OS
+linux16 /vmlinuz-... nopku transparent_hugepage=never default_hugepagesz=1G hugepagesz=1G hugepages=8
+```
+2.2 2M大页内存配置
+```
+# 参考如下参数编辑 '/boot/grub2/grub.cfg'，然后重启OS
+linux16 /vmlinuz-... nopku transparent_hugepage=never default_hugepagesz=2M hugepagesz=2M hugepages=1024
+```
+
+## 服务端
 1. 通过ethtool查看网卡对应的PCI总线地址 ethtool -i xxx。
 ```
 #如ens224为发包网卡
@@ -116,7 +135,7 @@ sudo ./dpdk/dpdk-22.03/usertools/dpdk-devbind.py -b uio_pci_generic 0000:0b:00.0
 LD_LIBRARY_PATH=./dpdk/install/lib/x86_64-linux-gnu ./app -l 0-1 --proc-type=primary --file-prefix=pmd1 --allow=0000:0b:00.0 -- -a 10.0.0.2 -g 10.0.0.1 -m 255.255.255.0 -l 1 -p 10000 -d 3 -r 0
 ```
 
-## 服务端
+## 客户端
 1. 通过ethtool查看网卡对应的PCI总线地址 ethtool -i xxx。
 ```
 #如ens224为收包网卡
@@ -145,3 +164,18 @@ sudo ./dpdk/dpdk-22.03/usertools/dpdk-devbind.py -b uio_pci_generic 0000:0b:00.0
 LD_LIBRARY_PATH=./dpdk/install/lib/x86_64-linux-gnu ./app -l 0-1 --proc-type=primary --file-prefix=pmd1 --allow=0000:0b:00.0 -- -a 10.0.0.4 -g 10.0.0.1 -m 255.255.255.0 -p 80 -s 10.0.0.3 -c 128 -u '/`````' -h www.baidu.com
 ```
 
+
+# 性能测试结果
+## 测试环境
+宿主机：Vmware ESXi 6.7
+操作系统：Ubuntu 20.04.6 LTS with 5.15.0-67-generic
+CPU：Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz 2cores
+内存: 16GB
+网卡：vmxnet3
+
+Throughput ( Requests/sec )
+
+| Client | RPS | Throughput |
+| ------------- | ------------- | ------------- |
+|   1 |  18432 |   172 |
+| 128 | 344889 |  3254 |
