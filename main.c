@@ -759,10 +759,19 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
                     io_stat[0]++;
                     io_stat[2] += httpdatalen;
                     assert(tcp_sndbuf(tpcb) >= httpdatalen);
-                    tcp_close(tpcb);
-                    num_stat--;
-                    free(r);
-                    break;
+                    
+                    int choice = rand() % 4;
+                    // 0/1 no close 2 close 3 force close
+                    if (choice > 1) {
+                        if (choice == 2) {
+                            tcp_close(tpcb);
+                        } else if (choice == 3) {
+                            tcp_abort(tpcb);
+                        }
+                        num_stat--;
+                        free(r);
+                        break;
+                    }
 
                     /*
                      'GET /' is 5 letters
