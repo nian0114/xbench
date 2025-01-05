@@ -422,6 +422,7 @@ static err_t low_level_output(struct netif *netif __attribute__((unused)), struc
 }
 
 static unsigned long io_stat[3] = { 0 };
+static int num_stat = 0;
 
 struct http_response {
     int state;
@@ -758,7 +759,11 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
                     io_stat[0]++;
                     io_stat[2] += httpdatalen;
                     assert(tcp_sndbuf(tpcb) >= httpdatalen);
-                    
+                    tcp_close(tpcb);
+                    num_stat--;
+                    free(r);
+                    break;
+
                     /*
                      'GET /' is 5 letters
                      如果第五个字符不是`, 就不随机替换
@@ -1021,6 +1026,8 @@ int main(int argc, char *const *argv)
                 tcp_ext_arg_set(tpcb, 0, (void *) r);
             }
             assert(tcp_connect(tpcb, &_srv_ip, server_port, connected_handler) == ERR_OK);
+            
+            num_stat += 1;
         }
     }
     
@@ -1030,6 +1037,27 @@ int main(int argc, char *const *argv)
     {
         unsigned long prev_ts = 0;
         while (1) {
+            if (mode_server) {
+                
+            } else {
+//                printf("%d concurrent2 connection(s)\n\n", num_stat);
+                for (; num_stat < num_conn; num_stat++) {
+                    struct tcp_pcb *tpcb;
+                    assert((tpcb = tcp_new()) != NULL);
+                    {
+                        struct http_response *r;
+                        assert((r = (struct http_response *) malloc(sizeof(struct http_response))) != NULL);
+                        r->state = 0;
+                        r->cur = 0;
+                        tcp_arg(tpcb, (void *) r);
+                        tcp_ext_arg_set(tpcb, 0, (void *) r);
+                    }
+                    assert(tcp_connect(tpcb, &_srv_ip, server_port, connected_handler) == ERR_OK);
+//                    printf("%d concurrent4 connection(s)\n\n", num_stat);
+                }
+//                printf("%d concurrent3 connection(s)\n\n", num_stat);
+            }
+            
             struct rte_mbuf *rx_mbufs[MAX_PKT_BURST];
             unsigned short i, nb_rx = rte_eth_rx_burst(0 /* port id */, 0 /* queue id */, rx_mbufs, MAX_PKT_BURST);
             for (i = 0; i < nb_rx; i++) {
