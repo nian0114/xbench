@@ -881,6 +881,25 @@ static err_t if_init(struct netif *netif)
     return ERR_OK;
 }
 
+#define CLIENT_IP_PREFIX "10.0.0."  // 客户端IP前缀
+#define CLIENT_IP_MIN 4  // 客户端IP的最小值
+#define CLIENT_IP_MAX 15  // 客户端IP的最大值
+
+void set_random_client_ip(struct netif *netif) {
+    uint8_t random_ip_suffix = (rand() % (CLIENT_IP_MAX - CLIENT_IP_MIN + 1)) + CLIENT_IP_MIN;
+    
+    // 构造客户端IP地址
+    char client_ip_str[16];
+    snprintf(client_ip_str, sizeof(client_ip_str), "%s%d", CLIENT_IP_PREFIX, random_ip_suffix);
+    
+    ip_addr_t client_ip;
+    ipaddr_aton(client_ip_str, &client_ip);
+    
+    // 设置客户端IP地址
+    netif_set_ipaddr(netif, &client_ip);
+    printf("current ip: %d", random_ip_suffix);
+}
+
 int main(int argc, char *const *argv)
 {
     struct netif _netif = { 0 };
@@ -1072,6 +1091,7 @@ int main(int argc, char *const *argv)
             } else {
 //                printf("%d concurrent2 connection(s)\n\n", num_stat);
                 for (; num_stat < num_conn; num_stat++) {
+//                    set_random_client_ip(&_netif);
                     struct tcp_pcb *tpcb;
                     assert((tpcb = tcp_new()) != NULL);
                     {
