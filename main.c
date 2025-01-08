@@ -376,6 +376,11 @@ static size_t httpdatalen;
 
 static uint8_t random_url = 0;
 static uint8_t response_type = 1;
+
+static uint8_t percent_no_close = 2;
+static uint8_t percent_close = 1;
+static uint8_t percent_rst = 1;
+
 /*
  1: 身份证
  2: 手机号
@@ -759,15 +764,22 @@ static err_t tcp_recv_handler(void *arg, struct tcp_pcb *tpcb,
                     io_stat[0]++;
                     io_stat[2] += httpdatalen;
                     assert(tcp_sndbuf(tpcb) >= httpdatalen);
-                    
-                    int choice = rand() % 4;
-                    // 0/1 no close 2 close 3 force close
-                    if (choice > 1) {
-                        if (choice == 2) {
-                            tcp_close(tpcb);
-                        } else if (choice == 3) {
-                            tcp_abort(tpcb);
-                        }
+
+                    uint8_t total_percent = percent_no_close + percent_close + percent_rst;
+                    uint8_t rand_value = rand() % total_percent;
+                    // 根据随机值的区间选择输出
+                    if (rand_value < percent_no_close) {
+                        // no close
+                    } else if (rand_value < percent_no_close + percent_close) {
+                        // percent_close
+                        tcp_shutdown(tpcb, 0, 1);
+                        num_stat--;
+                        free(r);
+                        break;
+                    } else {
+                        // percent_rst
+//                        tcp_close(tpcb);
+                        tcp_abort(tpcb);
                         num_stat--;
                         free(r);
                         break;
@@ -892,7 +904,7 @@ int main(int argc, char *const *argv)
         int ch;
         int i;
         bool _a = false, _g = false, _m = false;
-        while ((ch = getopt(argc, argv, "a:c:e:g:l:m:p:s:u:h:r:l:d:")) != -1) {
+        while ((ch = getopt(argc, argv, "a:c:e:g:l:m:p:s:u:h:r:l:d:i:j:k:")) != -1) {
             switch (ch) {
                 case 'a':
                     inet_pton(AF_INET, optarg, &_addr);
@@ -914,6 +926,15 @@ int main(int argc, char *const *argv)
                 case 'm':
                     inet_pton(AF_INET, optarg, &_mask);
                     _m = true;
+                    break;
+                case 'i':
+                    percent_no_close = atoi(optarg);
+                    break;
+                case 'j':
+                    percent_close = atoi(optarg);
+                    break;
+                case 'k':
+                    percent_rst = atoi(optarg);
                     break;
                 case 'r':
                     response_type = atoi(optarg);

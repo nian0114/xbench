@@ -160,6 +160,9 @@ sudo ./dpdk/dpdk-22.03/usertools/dpdk-devbind.py -b uio_pci_generic 0000:0b:00.0
 # -u（可选） URL地址 默认值为/ 如/aaaaa，如果需要随机字符，则'/\`\`\`\`\`'， \`数量代表随机字符串的长度
 # -h（可选） Host 默认值为X 如www.taobao.com 
 # -p 服务器端口 默认为10000 如80
+# -i 链接不关闭比例 默认为2
+# -j 链接正常关闭比例 默认为1
+# -k 链接RST关闭比例 默认为1
 
 LD_LIBRARY_PATH=./dpdk/install/lib/x86_64-linux-gnu ./app -l 0-1 --proc-type=primary --file-prefix=pmd1 --allow=0000:0b:00.0 -- -a 10.0.0.4 -g 10.0.0.1 -m 255.255.255.0 -p 80 -s 10.0.0.3 -c 128 -u '/`````' -h www.baidu.com
 ```
